@@ -66,6 +66,7 @@ public class ExtendedPhysics : INonSharedRegionModule
     public const string PhysFunctChangeLinkType = "BulletSim.ChangeLinkType";
     public const string PhysFunctGetLinkType = "BulletSim.GetLinkType";
     public const string PhysFunctChangeLinkParams = "BulletSim.ChangeLinkParams";
+    public const string PhysFunctAxisLockLimits = "BulletSim.AxisLockLimits";
 
     // =============================================================
 
@@ -176,6 +177,67 @@ public class ExtendedPhysics : INonSharedRegionModule
         return ret;
     }
 
+    // Code for specifying params.
+    // The choice if 14700 is arbitrary and only serves to catch parameter code misuse.
+    [ScriptConstant]
+    public const int PHYS_AXIS_LOCK_LINEAR_X   = 14700;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LIMIT_LINEAR_X  = 14701;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LOCK_LINEAR_Y   = 14702;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LIMIT_LINEAR_Y  = 14703;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LOCK_LINEAR_Z   = 14704;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LIMIT_LINEAR_Z  = 14705;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LOCK_ANGULAR_X  = 14706;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LIMIT_ANGULAR_X = 14707;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LOCK_ANGULAR_Y  = 14708;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LIMIT_ANGULAR_Y = 14709;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LOCK_ANGULAR_Z  = 14710;
+    [ScriptConstant]
+    public const int PHYS_AXIS_LIMIT_ANGULAR_Z = 14711;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK_LINEAR   = 14712;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK_LINEAR_X = 14713;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK_LINEAR_Y = 14714;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK_LINEAR_Z = 14715;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK_ANGULAR  = 14716;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK_ANGULAR_X = 14717;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK_ANGULAR_Y = 14718;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK_ANGULAR_Z = 14719;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK          = 14720;
+    // physAxisLockLimits()
+    [ScriptInvocation]
+    public int physAxisLock(UUID hostID, UUID scriptID, object[] parms)
+    {
+        int ret = -1;
+        if (!Enabled) return ret;
+
+        PhysicsActor rootPhysActor;
+        if (GetRootPhysActor(hostID, out rootPhysActor))
+        {
+            object[] parms2 = AddToBeginningOfArray(rootPhysActor, null, parms);
+            ret = MakeIntError(rootPhysActor.Extension(PhysFunctAxisLockLimits, parms2));
+        }
+
+        return ret;
+    }
+
     [ScriptConstant]
     public const int PHYS_LINKSET_TYPE_CONSTRAINT  = 0;
     [ScriptConstant]
@@ -187,7 +249,6 @@ public class ExtendedPhysics : INonSharedRegionModule
     public int physSetLinksetType(UUID hostID, UUID scriptID, int linksetType)
     {
         int ret = -1;
-
         if (!Enabled) return ret;
 
         // The part that is requesting the change.
@@ -259,34 +320,11 @@ public class ExtendedPhysics : INonSharedRegionModule
         int ret = -1;
         if (!Enabled) return ret;
 
-        // The part that is requesting the change.
-        SceneObjectPart requestingPart = BaseScene.GetSceneObjectPart(hostID);
-
-        if (requestingPart != null)
+        PhysicsActor rootPhysActor;
+        if (GetRootPhysActor(hostID, out rootPhysActor))
         {
-            // The type is is always on the root of a linkset.
-            SceneObjectGroup containingGroup = requestingPart.ParentGroup;
-            SceneObjectPart rootPart = containingGroup.RootPart;
-
-            if (rootPart != null)
-            {
-                PhysicsActor rootPhysActor = rootPart.PhysActor;
-                if (rootPhysActor != null)
-                {
-                    object[] parms2 = { rootPhysActor, null };
-                    ret = MakeIntError(rootPhysActor.Extension(PhysFunctGetLinksetType, parms2));
-                }
-                else
-                {
-                    m_log.WarnFormat("{0} physGetLinksetType: root part does not have a physics actor. rootName={1}, hostID={2}",
-                                        LogHeader, rootPart.Name, hostID);
-                }
-            }
-            else
-            {
-                m_log.WarnFormat("{0} physGetLinksetType: root part does not exist. RequestingPartName={1}, hostID={2}",
-                                    LogHeader, requestingPart.Name, hostID);
-            }
+            object[] parms2 = { rootPhysActor, null };
+            ret = MakeIntError(rootPhysActor.Extension(PhysFunctGetLinksetType, parms2));
         }
         else
         {
