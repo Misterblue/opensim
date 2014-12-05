@@ -180,47 +180,51 @@ public class ExtendedPhysics : INonSharedRegionModule
     // Code for specifying params.
     // The choice if 14700 is arbitrary and only serves to catch parameter code misuse.
     [ScriptConstant]
-    public const int PHYS_AXIS_LOCK_LINEAR_X   = 14700;
+    public const int PHYS_AXIS_LOCK_LINEAR     = 14700;
     [ScriptConstant]
-    public const int PHYS_AXIS_LIMIT_LINEAR_X  = 14701;
+    public const int PHYS_AXIS_LOCK_LINEAR_X   = 14701;
     [ScriptConstant]
-    public const int PHYS_AXIS_LOCK_LINEAR_Y   = 14702;
+    public const int PHYS_AXIS_LIMIT_LINEAR_X  = 14702;
     [ScriptConstant]
-    public const int PHYS_AXIS_LIMIT_LINEAR_Y  = 14703;
+    public const int PHYS_AXIS_LOCK_LINEAR_Y   = 14703;
     [ScriptConstant]
-    public const int PHYS_AXIS_LOCK_LINEAR_Z   = 14704;
+    public const int PHYS_AXIS_LIMIT_LINEAR_Y  = 14704;
     [ScriptConstant]
-    public const int PHYS_AXIS_LIMIT_LINEAR_Z  = 14705;
+    public const int PHYS_AXIS_LOCK_LINEAR_Z   = 14705;
     [ScriptConstant]
-    public const int PHYS_AXIS_LOCK_ANGULAR_X  = 14706;
+    public const int PHYS_AXIS_LIMIT_LINEAR_Z  = 14706;
     [ScriptConstant]
-    public const int PHYS_AXIS_LIMIT_ANGULAR_X = 14707;
+    public const int PHYS_AXIS_LOCK_ANGULAR    = 14707;
     [ScriptConstant]
-    public const int PHYS_AXIS_LOCK_ANGULAR_Y  = 14708;
+    public const int PHYS_AXIS_LOCK_ANGULAR_X  = 14708;
     [ScriptConstant]
-    public const int PHYS_AXIS_LIMIT_ANGULAR_Y = 14709;
+    public const int PHYS_AXIS_LIMIT_ANGULAR_X = 14709;
     [ScriptConstant]
-    public const int PHYS_AXIS_LOCK_ANGULAR_Z  = 14710;
+    public const int PHYS_AXIS_LOCK_ANGULAR_Y  = 14710;
     [ScriptConstant]
-    public const int PHYS_AXIS_LIMIT_ANGULAR_Z = 14711;
+    public const int PHYS_AXIS_LIMIT_ANGULAR_Y = 14711;
     [ScriptConstant]
-    public const int PHYS_AXIS_UNLOCK_LINEAR   = 14712;
+    public const int PHYS_AXIS_LOCK_ANGULAR_Z  = 14712;
     [ScriptConstant]
-    public const int PHYS_AXIS_UNLOCK_LINEAR_X = 14713;
+    public const int PHYS_AXIS_LIMIT_ANGULAR_Z = 14713;
     [ScriptConstant]
-    public const int PHYS_AXIS_UNLOCK_LINEAR_Y = 14714;
+    public const int PHYS_AXIS_UNLOCK_LINEAR   = 14714;
     [ScriptConstant]
-    public const int PHYS_AXIS_UNLOCK_LINEAR_Z = 14715;
+    public const int PHYS_AXIS_UNLOCK_LINEAR_X = 14715;
     [ScriptConstant]
-    public const int PHYS_AXIS_UNLOCK_ANGULAR  = 14716;
+    public const int PHYS_AXIS_UNLOCK_LINEAR_Y = 14716;
     [ScriptConstant]
-    public const int PHYS_AXIS_UNLOCK_ANGULAR_X = 14717;
+    public const int PHYS_AXIS_UNLOCK_LINEAR_Z = 14717;
     [ScriptConstant]
-    public const int PHYS_AXIS_UNLOCK_ANGULAR_Y = 14718;
+    public const int PHYS_AXIS_UNLOCK_ANGULAR  = 14718;
     [ScriptConstant]
-    public const int PHYS_AXIS_UNLOCK_ANGULAR_Z = 14719;
+    public const int PHYS_AXIS_UNLOCK_ANGULAR_X = 14719;
     [ScriptConstant]
-    public const int PHYS_AXIS_UNLOCK          = 14720;
+    public const int PHYS_AXIS_UNLOCK_ANGULAR_Y = 14720;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK_ANGULAR_Z = 14721;
+    [ScriptConstant]
+    public const int PHYS_AXIS_UNLOCK           = 14722;
     // physAxisLockLimits()
     [ScriptInvocation]
     public int physAxisLock(UUID hostID, UUID scriptID, object[] parms)

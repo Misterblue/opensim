@@ -137,27 +137,11 @@ public class BSActorLockAxis : BSActor
 
             // The constraint is tied to the world and oriented to the prim.
 
-            // Free to move linearly in the region
-            // OMV.Vector3 linearLow = OMV.Vector3.Zero;
-            // OMV.Vector3 linearHigh = m_physicsScene.TerrainManager.DefaultRegionSize;
-            OMV.Vector3 linearLow = m_controllingPrim.RawPosition + new OMV.Vector3(-10000f, -10000f, -10000f);
-            OMV.Vector3 linearHigh = m_controllingPrim.RawPosition + new OMV.Vector3(10000f, 10000f, 10000f);
-            if (m_controllingPrim.LockedLinearAxis.X != BSPhysObject.FreeAxis)
+            if (!axisConstrainer.SetLinearLimits(m_controllingPrim.LockedLinearAxisLow, m_controllingPrim.LockedLinearAxisHigh))
             {
-                linearLow.X = m_controllingPrim.RawPosition.X + m_controllingPrim.LockedLinearAxisLow.X;
-                linearHigh.X = m_controllingPrim.RawPosition.X + m_controllingPrim.LockedLinearAxisHigh.X;
+                m_physicsScene.DetailLog("{0},BSActorLockAxis.AddAxisLockConstraint,failedSetLinearLimits",
+                        m_controllingPrim.LocalID);
             }
-            if (m_controllingPrim.LockedLinearAxis.Y != BSPhysObject.FreeAxis)
-            {
-                linearLow.Y = m_controllingPrim.RawPosition.Y + m_controllingPrim.LockedLinearAxisLow.Y;
-                linearHigh.Y = m_controllingPrim.RawPosition.Y + m_controllingPrim.LockedLinearAxisHigh.Y;
-            }
-            if (m_controllingPrim.LockedLinearAxis.Z != BSPhysObject.FreeAxis)
-            {
-                linearLow.Z = m_controllingPrim.RawPosition.Z + m_controllingPrim.LockedLinearAxisLow.Z;
-                linearHigh.Z = m_controllingPrim.RawPosition.Z + m_controllingPrim.LockedLinearAxisHigh.Z;
-            }
-            axisConstrainer.SetLinearLimits(linearLow, linearHigh);
 
             if (!axisConstrainer.SetAngularLimits(m_controllingPrim.LockedAngularAxisLow, m_controllingPrim.LockedAngularAxisHigh))
             {
@@ -166,7 +150,9 @@ public class BSActorLockAxis : BSActor
             }
 
             m_physicsScene.DetailLog("{0},BSActorLockAxis.AddAxisLockConstraint,create,linLow={1},linHi={2},angLow={3},angHi={4}",
-                                        m_controllingPrim.LocalID, linearLow, linearHigh,
+                                        m_controllingPrim.LocalID,
+                                        m_controllingPrim.LockedLinearAxisLow,
+                                        m_controllingPrim.LockedLinearAxisHigh,
                                         m_controllingPrim.LockedAngularAxisLow,
                                         m_controllingPrim.LockedAngularAxisHigh);
 

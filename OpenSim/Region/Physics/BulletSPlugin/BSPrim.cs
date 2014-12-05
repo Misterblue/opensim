@@ -1630,26 +1630,31 @@ public class BSPrim : BSPhysObject
     //    followed by another int and floats, etc.
     private object SetAxisLockLimitsExtension(object[] pParams)
     {
+        DetailLog("{0} SetAxisLockLimitsExtension. parmlen={1}", LogHeader, pParams.GetLength(0));
         object ret = null;
         try
         {
-            if (pParams.GetLength(0) == 1)
+            if (pParams.GetLength(0) > 1)
             {
-                object[] parms = (object[])pParams[0];
-                int index = 1;
-                while (index < parms.GetLength(0))
+                int index = 2;
+                while (index < pParams.GetLength(0))
                 {
-                    var funct = parms[index];
+                    var funct = pParams[index];
+                    DetailLog("{0} SetAxisLockLimitsExtension. op={1}, index={2}", LogHeader, funct, index);
                     if (funct is Int32 || funct is Int64)
                     {
                         switch ((int)funct)
                         {
+                            case ExtendedPhysics.PHYS_AXIS_LOCK_LINEAR:
+                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LOCK_LINEAR, 0f, 0f);
+                                index += 1;
+                                break;
                             case ExtendedPhysics.PHYS_AXIS_LOCK_LINEAR_X:
                                 ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LOCK_LINEAR_X, 0f, 0f);
                                 index += 1;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LIMIT_LINEAR_X:
-                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_LINEAR_X, (float)parms[index + 1], (float)parms[index + 2]);
+                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_LINEAR_X, (float)pParams[index + 1], (float)pParams[index + 2]);
                                 index += 3;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LOCK_LINEAR_Y:
@@ -1657,7 +1662,7 @@ public class BSPrim : BSPhysObject
                                 index += 1;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LIMIT_LINEAR_Y:
-                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_LINEAR_Y, (float)parms[index + 1], (float)parms[index + 2]);
+                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_LINEAR_Y, (float)pParams[index + 1], (float)pParams[index + 2]);
                                 index += 3;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LOCK_LINEAR_Z:
@@ -1665,15 +1670,19 @@ public class BSPrim : BSPhysObject
                                 index += 1;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LIMIT_LINEAR_Z:
-                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_LINEAR_Z, (float)parms[index + 1], (float)parms[index + 2]);
+                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_LINEAR_Z, (float)pParams[index + 1], (float)pParams[index + 2]);
                                 index += 3;
+                                break;
+                            case ExtendedPhysics.PHYS_AXIS_LOCK_ANGULAR:
+                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LOCK_ANGULAR, 0f, 0f);
+                                index += 1;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LOCK_ANGULAR_X:
                                 ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LOCK_ANGULAR_X, 0f, 0f);
                                 index += 1;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LIMIT_ANGULAR_X:
-                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_ANGULAR_X, (float)parms[index + 1], (float)parms[index + 2]);
+                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_ANGULAR_X, (float)pParams[index + 1], (float)pParams[index + 2]);
                                 index += 3;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LOCK_ANGULAR_Y:
@@ -1681,7 +1690,7 @@ public class BSPrim : BSPhysObject
                                 index += 1;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LIMIT_ANGULAR_Y:
-                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_ANGULAR_Y, (float)parms[index + 1], (float)parms[index + 2]);
+                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_ANGULAR_Y, (float)pParams[index + 1], (float)pParams[index + 2]);
                                 index += 3;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LOCK_ANGULAR_Z:
@@ -1689,7 +1698,7 @@ public class BSPrim : BSPhysObject
                                 index += 1;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_LIMIT_ANGULAR_Z:
-                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_ANGULAR_Z, (float)parms[index + 1], (float)parms[index + 2]);
+                                ApplyAxisLimits(ExtendedPhysics.PHYS_AXIS_LIMIT_ANGULAR_Z, (float)pParams[index + 1], (float)pParams[index + 2]);
                                 index += 3;
                                 break;
                             case ExtendedPhysics.PHYS_AXIS_UNLOCK_LINEAR:
@@ -1729,6 +1738,7 @@ public class BSPrim : BSPhysObject
                                 index += 1;
                                 break;
                             default:
+                                m_log.WarnFormat("{0} SetSxisLockLimitsExtension. Unknown op={1}", LogHeader, funct);
                                 index += 1;
                                 break;
                         }
@@ -1752,11 +1762,17 @@ public class BSPrim : BSPhysObject
         // When done here, LockedXXXAxis flags are set and LockedXXXAxixLow/High are set to the range.
     protected void ApplyAxisLimits(int funct, float low, float high)
     {
+        DetailLog("{0} ApplyAxisLimits. op={1}, low={2}, high={3}", LogHeader, funct, low, high);
         float linearMax = 23000f;
         float angularMax = (float)Math.PI;
 
         switch ((int)funct)
         {
+            case ExtendedPhysics.PHYS_AXIS_LOCK_LINEAR:
+                this.LockedLinearAxis = new OMV.Vector3(LockedAxis, LockedAxis, LockedAxis);
+                this.LockedLinearAxisLow = OMV.Vector3.Zero;
+                this.LockedLinearAxisHigh = OMV.Vector3.Zero;
+                break;
             case ExtendedPhysics.PHYS_AXIS_LOCK_LINEAR_X:
                 this.LockedLinearAxis.X = LockedAxis;
                 this.LockedLinearAxisLow.X = 0f;
@@ -1786,6 +1802,11 @@ public class BSPrim : BSPhysObject
                 this.LockedLinearAxis.Z = LockedAxis;
                 this.LockedLinearAxisLow.Z = Util.Clip(low, -linearMax, linearMax);
                 this.LockedLinearAxisHigh.Z = Util.Clip(high, -linearMax, linearMax);
+                break;
+            case ExtendedPhysics.PHYS_AXIS_LOCK_ANGULAR:
+                this.LockedAngularAxis = new OMV.Vector3(LockedAxis, LockedAxis, LockedAxis);
+                this.LockedAngularAxisLow = OMV.Vector3.Zero;
+                this.LockedAngularAxisHigh = OMV.Vector3.Zero;
                 break;
             case ExtendedPhysics.PHYS_AXIS_LOCK_ANGULAR_X:
                 this.LockedAngularAxis.X = LockedAxis;
