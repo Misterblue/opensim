@@ -532,6 +532,12 @@ public class BSPrim : BSPhysObject
             {
                 return new BSActorSetForce(PhysScene, this, SetForceActorName);
             });
+
+            // Call update so actor Refresh() is called to start things off
+            PhysScene.TaintedObject(LocalID, "BSPrim.setForce", delegate()
+            {
+                UpdatePhysicalParameters();
+            });
         }
     }
 
@@ -765,6 +771,12 @@ public class BSPrim : BSPhysObject
                 return new BSActorSetTorque(PhysScene, this, SetTorqueActorName);
             });
             DetailLog("{0},BSPrim.SetTorque,call,torque={1}", LocalID, RawTorque);
+
+            // Call update so actor Refresh() is called to start things off
+            PhysScene.TaintedObject(LocalID, "BSPrim.setTorque", delegate()
+            {
+                UpdatePhysicalParameters();
+            });
         }
     }
     public override OMV.Vector3 Acceleration {
@@ -1137,6 +1149,12 @@ public class BSPrim : BSPhysObject
             {
                 return new BSActorMoveToTarget(PhysScene, this, MoveToTargetActorName);
             });
+
+            // Call update so actor Refresh() is called to start things off
+            PhysScene.TaintedObject(LocalID, "BSPrim.PIDActive", delegate()
+            {
+                UpdatePhysicalParameters();
+            });
         }
     }
 
@@ -1162,6 +1180,12 @@ public class BSPrim : BSPhysObject
             EnableActor(HoverActive, HoverActorName, delegate()
             {
                 return new BSActorHover(PhysScene, this, HoverActorName);
+            });
+
+            // Call update so actor Refresh() is called to start things off
+            PhysScene.TaintedObject(LocalID, "BSPrim.PIDHoverActive", delegate()
+            {
+                UpdatePhysicalParameters();
             });
         }
     }
@@ -1630,7 +1654,7 @@ public class BSPrim : BSPhysObject
     //    followed by another int and floats, etc.
     private object SetAxisLockLimitsExtension(object[] pParams)
     {
-        DetailLog("{0} SetAxisLockLimitsExtension. parmlen={1}", LogHeader, pParams.GetLength(0));
+        DetailLog("{0} SetAxisLockLimitsExtension. parmlen={1}", LocalID, pParams.GetLength(0));
         object ret = null;
         try
         {
@@ -1640,7 +1664,7 @@ public class BSPrim : BSPhysObject
                 while (index < pParams.GetLength(0))
                 {
                     var funct = pParams[index];
-                    DetailLog("{0} SetAxisLockLimitsExtension. op={1}, index={2}", LogHeader, funct, index);
+                    DetailLog("{0} SetAxisLockLimitsExtension. op={1}, index={2}", LocalID, funct, index);
                     if (funct is Int32 || funct is Int64)
                     {
                         switch ((int)funct)
@@ -1762,7 +1786,7 @@ public class BSPrim : BSPhysObject
         // When done here, LockedXXXAxis flags are set and LockedXXXAxixLow/High are set to the range.
     protected void ApplyAxisLimits(int funct, float low, float high)
     {
-        DetailLog("{0} ApplyAxisLimits. op={1}, low={2}, high={3}", LogHeader, funct, low, high);
+        DetailLog("{0} ApplyAxisLimits. op={1}, low={2}, high={3}", LocalID, funct, low, high);
         float linearMax = 23000f;
         float angularMax = (float)Math.PI;
 
