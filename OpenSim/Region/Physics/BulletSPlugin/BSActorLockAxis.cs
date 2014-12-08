@@ -47,6 +47,9 @@ public class BSActorLockAxis : BSActor
     {
         m_physicsScene.DetailLog("{0},BSActorLockAxis,constructor", m_controllingPrim.LocalID);
         LockAxisConstraint = null;
+
+        // we place our constraint just before the simulation step to make sure the linkset is complete
+        m_physicsScene.BeforeStep += PhysicsScene_BeforeStep;
     }
 
     // BSActor.isActive
@@ -59,6 +62,7 @@ public class BSActorLockAxis : BSActor
     // BSActor.Dispose()
     public override void Dispose()
     {
+        m_physicsScene.BeforeStep -= PhysicsScene_BeforeStep;
         RemoveAxisLockConstraint();
     }
 
@@ -67,8 +71,15 @@ public class BSActorLockAxis : BSActor
     // BSActor.Refresh()
     public override void Refresh()
     {
-        m_physicsScene.DetailLog("{0},BSActorLockAxis,refresh,lockedAxis={1},enabled={2},pActive={3}",
-                                    m_controllingPrim.LocalID, m_controllingPrim.LockedAngularAxis, Enabled, m_controllingPrim.IsPhysicallyActive);
+        // Since the axis logging is done with a constraint, Refresh() time is good for
+        //    changing parameters but this needs to wait until the prim/linkset is physically
+        //    constructed. Therefore, the constraint itself is placed at pre-step time.
+        /*
+        m_physicsScene.DetailLog("{0},BSActorLockAxis,refresh,lockedLinear={1},lockedAngular={2},enabled={3},pActive={4}",
+                                    m_controllingPrim.LocalID,
+                                    m_controllingPrim.LockedLinearAxis,
+                                    m_controllingPrim.LockedAngularAxis,
+                                    Enabled, m_controllingPrim.IsPhysicallyActive);
         // If all the axis are free, we don't need to exist
         if (m_controllingPrim.LockedAngularAxis == m_controllingPrim.LockedAxisFree
                 && m_controllingPrim.LockedLinearAxis == m_controllingPrim.LockedAxisFree)
@@ -93,6 +104,7 @@ public class BSActorLockAxis : BSActor
         {
             RemoveAxisLockConstraint();
         }
+        */
     }
 
     // The object's physical representation is being rebuilt so pick up any physical dependencies (constraints, ...).
@@ -101,15 +113,35 @@ public class BSActorLockAxis : BSActor
     // BSActor.RemoveDependencies()
     public override void RemoveDependencies()
     {
-        if (LockAxisConstraint != null)
+        RemoveAxisLockConstraint();
+        // The pre-step action will restore the constraint of needed
+    }
+
+    private void PhysicsScene_BeforeStep(float timestep)
+    {
+        // If all the axis are free, we don't need to exist
+        if (m_controllingPrim.LockedAngularAxis == m_controllingPrim.LockedAxisFree
+                && m_controllingPrim.LockedLinearAxis == m_controllingPrim.LockedAxisFree)
         {
-            // If a constraint is set up, remove it from the physical scene
-            RemoveAxisLockConstraint();
-            // Schedule a call before the next simulation step to restore the constraint.
-            m_physicsScene.PostTaintObject("BSActorLockAxis:" + ActorName, m_controllingPrim.LocalID, delegate()
+            Enabled = false;
+        }
+
+        // If the object is physically active, add the axis locking constraint
+        if (isActive)
+        {
+            // Check to see if the locking parameters have changed
+            if (m_controllingPrim.LockedLinearAxis != this.LockAxisLinearFlags
+                || m_controllingPrim.LockedAngularAxis != this.LockAxisAngularFlags)
             {
-                Refresh();
-            });
+                // The locking has changed. Remove the old constraint and build a new one
+                RemoveAxisLockConstraint();
+            }
+
+            AddAxisLockConstraint();
+        }
+        else
+        {
+            RemoveAxisLockConstraint();
         }
     }
 
