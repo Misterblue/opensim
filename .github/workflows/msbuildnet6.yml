@@ -40,7 +40,7 @@ jobs:
           files: LastDotNetBuild.zip
 
     - name: report push to irc
-      if: github.event_name == 'push'
+      if: github.event_name == 'push' && github.repository_owner == "opensim"
       uses: rectalogic/notify-irc@v1
       with:
         channel: "#opensim-dev"
@@ -52,7 +52,7 @@ jobs:
           dotnet compile: ${{ steps.build.conclusion }}
 
     - name: manual report to irc
-      if: github.event_name == 'workflow_dispatch'
+      if: github.event_name == 'workflow_dispatch' && github.repository_owner == "opensim"
       uses: rectalogic/notify-irc@v1
       with:
         channel: "#opensim-dev"
