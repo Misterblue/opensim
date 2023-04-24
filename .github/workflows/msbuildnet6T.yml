@@ -1,10 +1,8 @@
-name: .msbuildnet6
+name: .msbuildnet6T
 
 on:
   push:
     branches: [ "dotnet6-updateBSversionT" ]
-    paths:
-      - '**.cs'
   workflow_dispatch:
 
 jobs:
