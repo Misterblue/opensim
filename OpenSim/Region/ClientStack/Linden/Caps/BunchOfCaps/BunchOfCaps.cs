@@ -335,6 +335,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 httpResponse.StatusCode = (int)HttpStatusCode.BadRequest;
                 return;
             }
+            m_log.DebugFormat( "[CAPS]: Received seed caps: {0}", capsRequested); // DEBUG DEBUG DEBUG
 
             HashSet<string> validCaps = new();
 
@@ -384,6 +385,8 @@ namespace OpenSim.Region.ClientStack.Linden
             LLSDxmlEncode2.AddMap(sb);
             m_HostCapsObj.GetCapsDetailsLLSDxml(validCaps, sb);
             LLSDxmlEncode2.AddEndMap(sb);
+
+            m_log.DebugFormat( "[CAPS]: Replying with capabilities: {0}", sb); // DEBUG DEBUG DEBUG
 
             httpResponse.RawBuffer = LLSDxmlEncode2.EndToBytes(sb);
             httpResponse.StatusCode = (int)HttpStatusCode.OK;
