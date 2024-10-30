@@ -966,7 +966,34 @@
       <Reference name="log4net"/>
 
     </Project>
- 
+
+    <Project name="OpenSim.Services.WebRtcVoiceService" path="OpenSim/Services/WebRtcVoiceService" type="Library">
+      <Configuration name="Debug">
+        <Options>
+          <OutputPath>../../../bin/</OutputPath>
+        </Options>
+      </Configuration>
+      <Configuration name="Release">
+        <Options>
+          <OutputPath>../../../bin/</OutputPath>
+        </Options>
+      </Configuration>
+
+      <ReferencePath>../../../bin/</ReferencePath>
+      <Reference name="OpenSim.Framework"/>
+      <Reference name="OpenSim.Framework.Console"/>
+      <Reference name="OpenSim.Services.Interfaces"/>
+      <Reference name="OpenSim.Services.Connectors"/>
+      <Reference name="OpenSim.Services.Base"/>
+      <Reference name="OpenSim.Server.Base"/>
+      <Reference name="OpenSim.Data"/>
+      <Reference name="OpenMetaverseTypes"/>
+      <Reference name="OpenMetaverse"/>
+      <Reference name="OpenMetaverse.StructuredData"/>
+      <Reference name="Nini"/>
+      <Reference name="log4net"/>
+    </Project>
+
     <Project name="OpenSim.Server.Handlers" path="OpenSim/Server/Handlers" type="Library">
       <Configuration name="Debug">
         <Options>

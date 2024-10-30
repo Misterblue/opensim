@@ -28,11 +28,7 @@
 using System;
 using System.IO;
 using System.Net;
-using System.Net.Security;
-using System.Web;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -42,13 +38,11 @@ using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using OSDMap = OpenMetaverse.StructuredData.OSDMap;
 
-using OpenSim.Framework.Capabilities;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 using Caps = OpenSim.Framework.Capabilities.Caps;
-using OpenSim.Server.Base;
 using OpenSim.Services.Interfaces;
 
 using log4net;
@@ -97,16 +91,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.WebRTCVoice
 
             try
             {
-                string serviceDll = m_Config.GetString("LocalServiceUrl", String.Empty);
-
-                if (serviceDll.Length == 0)
-                {
-                    m_log.ErrorFormat("{0}: No LocalServiceUrl named in section WebRTCVoice.  Not starting.", logHeader);
-                    return;
-                }
-
                 // TODO:
-
 
                 m_Enabled = true;
 
@@ -125,17 +110,9 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.WebRTCVoice
 
         public void AddRegion(Scene scene)
         {
-            // We generate these like this: The region's external host name
-            // as defined in Regions.ini is a good address to use. It's a
-            // dotted quad (or should be!) and it can reach this host from
-            // a client. The port is grabbed from the region's HTTP server.
-            m_openSimWellKnownHTTPAddress = scene.RegionInfo.ExternalHostName;
-            m_ServicePort = MainServer.Instance.Port;
-
             if (m_Enabled)
             {
-                // we need to capture scene in an anonymous method
-                // here as we need it later in the callbacks
+                // Get the hook that means Capbibilities are being registered
                 scene.EventManager.OnRegisterCaps += (UUID agentID, Caps caps) =>
                     {
                         OnRegisterCaps(scene, agentID, caps);
@@ -158,6 +135,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.WebRTCVoice
                 // register the voice interface for this module, so the script engine can call us
                 scene.RegisterModuleInterface<IVoiceModule>(this);
 
+                // Register for the region feature reporting so we can add 'webrtc'
                 var sfm = scene.RequestModuleInterface<ISimulatorFeaturesModule>();
                 sfm.OnSimulatorFeaturesRequest += OnSimulatorFeatureRequestHandler;
                 m_log.DebugFormat("{0}: registering OnSimulatorFeatureRequestHandler", logHeader);
@@ -215,8 +193,7 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.WebRTCVoice
         // ProvisionVoiceAccountRequest, VoiceSignalingRequest, and ParcelVoiceInfoRequest.
         //
         // ProvisionVoiceAccountRequest allows the client to obtain
-        // the voice account credentials for the avatar it is
-        // controlling (e.g., user name, password, etc).
+        // voice communication information the the avater.
         //
         // VoiceSignalingRequest: Used for trickling ICE candidates.
         //
@@ -317,72 +294,24 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.WebRTCVoice
                 }
             }
 
-            // TODO:
+            IWebRtcVoiceService voiceService = scene.RequestModuleInterface<IWebRtcVoiceService>();
+            if (voiceService is null)
+            {
+                m_log.ErrorFormat("{0}[ProvisionVoice]: avatar \"{1}\": no voice service", logHeader, agentID);
+                response.StatusCode = (int)HttpStatusCode.NotFound;
+                return;
+            }
+
             m_log.DebugFormat("{0}[ProvisionVoice]: message: {1}", logHeader, map.ToString());
+            OSDMap resp = voiceService.ProvisionVoiceAccountRequest(map, agentID, scene);
+
+            // TODO: check for erros and package the response
 
             response.StatusCode = (int)HttpStatusCode.OK;
             response.RawBuffer = Util.UTF8.GetBytes("<llsd><undef /></llsd>");
             return;
-
-            /* OLD FREE SWITCH CODE -- REMOVE REMOVE REMOVE
-            ScenePresence avatar = scene.GetScenePresence(agentID);
-            if (avatar == null)
-            {
-                System.Threading.Thread.Sleep(2000);
-                avatar = scene.GetScenePresence(agentID);
-
-                if (avatar == null)
-                {
-                    response.RawBuffer = Util.UTF8.GetBytes("<llsd>undef</llsd>");
-                    return;
-                }
-            }
-            string avatarName = avatar.Name;
-
-            try
-            {
-                //XmlElement    resp;
-                string agentname = "x" + Convert.ToBase64String(agentID.GetBytes());
-                string password  = "1234";//temp hack//new UUID(Guid.NewGuid()).ToString().Replace('-','Z').Substring(0,16);
-
-                // XXX: we need to cache the voice credentials, as
-                // FreeSwitch is later going to come and ask us for
-                // those
-                agentname = agentname.Replace('+', '-').Replace('/', '_');
-
-                lock (m_UUIDName)
-                {
-                    if (m_UUIDName.ContainsKey(agentname))
-                    {
-                        m_UUIDName[agentname] = avatarName;
-                    }
-                    else
-                    {
-                        m_UUIDName.Add(agentname, avatarName);
-                    }
-                }
-
-                string accounturl = String.Format("http://{0}:{1}{2}/", m_openSimWellKnownHTTPAddress,
-                                                              m_freeSwitchServicePort, m_freeSwitchAPIPrefix);
-                // fast foward encode
-                osUTF8 lsl = LLSDxmlEncode2.Start();
-                LLSDxmlEncode2.AddMap(lsl);
-                LLSDxmlEncode2.AddElem("username", agentname, lsl);
-                LLSDxmlEncode2.AddElem("password", password, lsl);
-                LLSDxmlEncode2.AddElem("voice_sip_uri_hostname", m_freeSwitchRealm, lsl);
-                LLSDxmlEncode2.AddElem("voice_account_server_name", accounturl, lsl);
-                LLSDxmlEncode2.AddEndMap(lsl);
-                response.RawBuffer = LLSDxmlEncode2.EndToBytes(lsl);
-            }
-            catch (Exception e)
-            {
-                m_log.ErrorFormat("[FreeSwitchVoice][ProvisionVoice]: avatar \"{0}\": {1}, retry later", avatarName, e.Message);
-                m_log.DebugFormat("[FreeSwitchVoice][ProvisionVoice]: avatar \"{0}\": {1} failed", avatarName, e.ToString());
-
-                response.RawBuffer = osUTF8.GetASCIIBytes("<llsd>undef</llsd>");
-            }
-            */
         }
+
         public void VoiceSignalingRequest(IOSHttpRequest request, IOSHttpResponse response, UUID agentID, Scene scene)
         {
             if(request.HttpMethod != "POST")
@@ -425,9 +354,21 @@ namespace OpenSim.Region.OptionalModules.Avatar.Voice.WebRTCVoice
                     return;
                 }
             }
-            m_log.DebugFormat("{0}[VoiceSignaling]: message: {1}", logHeader, map.ToString());
 
-            // TODO:
+            IWebRtcVoiceService voiceService = scene.RequestModuleInterface<IWebRtcVoiceService>();
+            if (voiceService is null)
+            {
+                m_log.ErrorFormat("{0}[VoiceSignalingRequest]: avatar \"{1}\": no voice service", logHeader, agentID);
+                response.StatusCode = (int)HttpStatusCode.NotFound;
+                return;
+            }
+
+            m_log.DebugFormat("{0}[VoiceSignalingRequest]: message: {1}", logHeader, map.ToString());
+            OSDMap resp = voiceService.VoiceSignalingRequest(map, agentID, scene);
+
+            // TODO: check for erros and package the response
+            m_log.DebugFormat("{0}[VoiceSignalingRequest]: message: {1}", logHeader, map.ToString());
+
             response.StatusCode = (int)HttpStatusCode.OK;
             response.RawBuffer = Util.UTF8.GetBytes("<llsd><undef /></llsd>");
             return;
