@@ -114,6 +114,13 @@ namespace OpenSim.Services.LLLoginService
 
             return map;
         }
+
+        public override void AddAdditionalData(string key, object value)
+        {
+            // the additional data is not used for errors and any added are thrown away
+            return;
+        }
+
     }
 
     /// <summary>
@@ -198,6 +205,9 @@ namespace OpenSim.Services.LLLoginService
         private string classifiedFee;
         private int    maxAgentGroups;
 
+        // Data added by extenal modules
+        private Hashtable additionalData;
+
         static LLLoginResponse()
         {
             // This is being set, but it's not used
@@ -226,6 +236,8 @@ namespace OpenSim.Services.LLLoginService
             inventoryLibrary = new ArrayList();
             inventoryLibraryOwner = new ArrayList();
             activeGestures = new ArrayList();
+
+            additionalData = new Hashtable();
 
             SetDefaultValues();
         }
@@ -401,6 +413,11 @@ namespace OpenSim.Services.LLLoginService
             SeedCapability =  destination.ServerURI + CapsUtil.GetCapsSeedPath(aCircuit.CapsPath);
         }
 
+        public override void AddAdditionalData(string key, object value)
+        {
+            additionalData[key] = value;
+        }
+
         private void SetDefaultValues()
         {
             DST = "N";
@@ -438,19 +455,19 @@ namespace OpenSim.Services.LLLoginService
                     + "r" + userProfile.homelookat.Z.ToString()
                     + "]}";
             lookAt = "[r0.99949799999999999756,r0.03166859999999999814,r0]";
-            RegionX = (uint) 255232;
-            RegionY = (uint) 254976;
+            RegionX = (uint)255232;
+            RegionY = (uint)254976;
 
             // Classifieds;
-            AddClassifiedCategory((Int32) 1, "Shopping");
-            AddClassifiedCategory((Int32) 2, "Land Rental");
-            AddClassifiedCategory((Int32) 3, "Property Rental");
-            AddClassifiedCategory((Int32) 4, "Special Attraction");
-            AddClassifiedCategory((Int32) 5, "New Products");
-            AddClassifiedCategory((Int32) 6, "Employment");
-            AddClassifiedCategory((Int32) 7, "Wanted");
-            AddClassifiedCategory((Int32) 8, "Service");
-            AddClassifiedCategory((Int32) 9, "Personal");
+            AddClassifiedCategory((Int32)1, "Shopping");
+            AddClassifiedCategory((Int32)2, "Land Rental");
+            AddClassifiedCategory((Int32)3, "Property Rental");
+            AddClassifiedCategory((Int32)4, "Special Attraction");
+            AddClassifiedCategory((Int32)5, "New Products");
+            AddClassifiedCategory((Int32)6, "Employment");
+            AddClassifiedCategory((Int32)7, "Wanted");
+            AddClassifiedCategory((Int32)8, "Service");
+            AddClassifiedCategory((Int32)9, "Personal");
 
             SessionID = UUID.Random();
             SecureSessionID = UUID.Random();
@@ -575,6 +592,11 @@ namespace OpenSim.Services.LLLoginService
 
                 responseData["login"] = "true";
 
+                foreach (DictionaryEntry entry in additionalData)
+                {
+                    responseData[entry.Key.ToString()] = entry.Value.ToString();
+                }
+
                 return responseData;
             }
             catch (Exception e)
@@ -687,6 +709,11 @@ namespace OpenSim.Services.LLLoginService
                 if (m_buddyList != null)
                 {
                     map["buddy-list"] = ArrayListToOSDArray(m_buddyList.ToArray());
+                }
+
+                foreach (DictionaryEntry entry in additionalData)
+                {
+                    map[entry.Key.ToString()] = OSD.FromString(entry.Value.ToString());
                 }
 
                 map["login"] = OSD.FromString("true");

@@ -39,6 +39,7 @@ namespace OpenSim.Services.Interfaces
     {
         public abstract Hashtable ToHashtable();
         public abstract OSD ToOSDMap();
+        public abstract void AddAdditionalData(string key, object value);
     }
 
     public abstract class FailedLoginResponse : LoginResponse
@@ -50,6 +51,11 @@ namespace OpenSim.Services.Interfaces
         LoginResponse Login(string firstName, string lastName, string passwd, string startLocation, UUID scopeID,
             string clientVersion, string channel, string mac, string id0, IPEndPoint clientIP);
         Hashtable SetLevel(string firstName, string lastName, string passwd, int level, IPEndPoint clientIP);
+
+        // When a login happens, this event is triggered before the LoginResponse is sent.
+        // This allows other modules to modify the response if needed.
+        delegate void LoginCallback(LoginResponse response);
+        event LoginCallback OnLoginResponse;
     }
 
 

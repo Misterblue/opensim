@@ -58,6 +58,9 @@ namespace OpenSim.Server.Handlers.Login
             Object[] args = new Object[] { config, simService, libService };
             m_LoginService = ServerUtils.LoadPlugin<ILoginService>(loginService, args);
 
+            // Add the login service to the scene so other modules can access it
+            scene.RegisterModuleInterface<ILoginService>(m_LoginService);
+
             InitializeHandlers(server);
         }
 

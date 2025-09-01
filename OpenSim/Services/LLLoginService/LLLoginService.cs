@@ -97,7 +97,9 @@ namespace OpenSim.Services.LLLoginService
                                                                 // try any online. This is legacy behaviour
 
         readonly IConfig  m_LoginServerConfig;
-//        IConfig m_ClientsConfig;
+        //        IConfig m_ClientsConfig;
+
+        public event ILoginService.LoginCallback OnLoginResponse;
 
         public LLLoginService(IConfigSource config, ISimulationService simService, ILibraryService libraryService)
         {
@@ -129,7 +131,7 @@ namespace OpenSim.Services.LLLoginService
             m_SearchURL = m_LoginServerConfig.GetString("SearchURL", string.Empty);
             m_Currency = m_LoginServerConfig.GetString("Currency", string.Empty);
             m_ClassifiedFee = m_LoginServerConfig.GetString("ClassifiedFee", string.Empty);
-            m_DestinationGuide = m_LoginServerConfig.GetString ("DestinationGuide", string.Empty);
+            m_DestinationGuide = m_LoginServerConfig.GetString("DestinationGuide", string.Empty);
             m_AvatarPicker = m_LoginServerConfig.GetString("AvatarPicker", string.Empty);
 
             m_allowLoginFallbackToAnyRegion = m_LoginServerConfig.GetBoolean("AllowLoginFallbackToAnyRegion", m_allowLoginFallbackToAnyRegion);
@@ -171,11 +173,11 @@ namespace OpenSim.Services.LLLoginService
             if (!string.IsNullOrEmpty(m_MessageUrl))
             {
                 try
-                { 
+                {
                     using (WebClient client = new())
                         m_WelcomeMessage = client.DownloadString(m_MessageUrl);
                 }
-                catch               
+                catch
                 {
                     m_WelcomeMessage = null;
                 }
@@ -632,10 +634,20 @@ namespace OpenSim.Services.LLLoginService
                         m_MapTileURL, m_ProfileURL, m_OpenIDURL, m_SearchURL, m_Currency, m_DSTZone,
                         m_DestinationGuide, m_AvatarPicker, realID, m_ClassifiedFee,m_MaxAgentGroups);
 
-                    m_log.DebugFormat("[LLOGIN SERVICE]: All clear. Sending login response to {0} {1}", firstName, lastName);
+                m_log.DebugFormat("[LLOGIN SERVICE]: All clear. Sending login response to {0} {1}", firstName, lastName);
 
-                    return response;
-               }
+                // if other modules want to add additional data
+                try
+                {
+                    OnLoginResponse?.Invoke(response);
+                }
+                catch (Exception e)
+                {
+                    m_log.WarnFormat("[LLOGIN SERVICE]: Exception processing additional login data for {0} {1}: {2} {3}", firstName, lastName, e.ToString(), e.StackTrace);
+                }
+
+                return response;
+            }
             catch (Exception e)
             {
                 m_log.WarnFormat("[LLOGIN SERVICE]: Exception processing login for {0} {1}: {2} {3}", firstName, lastName, e.ToString(), e.StackTrace);
