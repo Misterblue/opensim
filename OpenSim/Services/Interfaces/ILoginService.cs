@@ -39,6 +39,8 @@ namespace OpenSim.Services.Interfaces
     {
         public abstract Hashtable ToHashtable();
         public abstract OSD ToOSDMap();
+        // Add additional data to the login response.
+        // The value can be a simple type or a HashTable if a complex structure is needed.
         public abstract void AddAdditionalData(string key, object value);
     }
 

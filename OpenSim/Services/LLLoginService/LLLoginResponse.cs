@@ -594,7 +594,8 @@ namespace OpenSim.Services.LLLoginService
 
                 foreach (DictionaryEntry entry in additionalData)
                 {
-                    responseData[entry.Key.ToString()] = entry.Value.ToString();
+                    // resumes the object values will serialize properly (usually into XML)
+                    responseData[entry.Key.ToString()] = entry.Value;
                 }
 
                 return responseData;
@@ -713,7 +714,7 @@ namespace OpenSim.Services.LLLoginService
 
                 foreach (DictionaryEntry entry in additionalData)
                 {
-                    map[entry.Key.ToString()] = OSD.FromString(entry.Value.ToString());
+                    map[entry.Key.ToString()] = RecursiveOSDFromObject(entry.Value);
                 }
 
                 map["login"] = OSD.FromString("true");
@@ -725,6 +726,28 @@ namespace OpenSim.Services.LLLoginService
                 m_log.Warn("[CLIENT]: LoginResponse: Error creating LLSD Response: " + e.Message);
 
                 return LLFailedLoginResponse.InternalError.ToOSDMap();
+            }
+        }
+
+        // Return OSDness from an object that could be a value or a HashTable of recursive values
+        private OSD RecursiveOSDFromObject(object obj)
+        {
+            if (obj is Hashtable hash)
+            {
+                OSDMap map = new OSDMap();
+                foreach (DictionaryEntry entry in hash)
+                {
+                    map[entry.Key.ToString()] = RecursiveOSDFromObject(entry.Value);
+                }
+                return map;
+            }
+            else if (obj is ArrayList list)
+            {
+                return ArrayListToOSDArray(list);
+            }
+            else
+            {
+                return OSD.FromObject(obj);
             }
         }
 
