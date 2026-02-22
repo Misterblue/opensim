@@ -31,7 +31,7 @@ using System.Collections.Generic;
 using OpenMetaverse;
 using System.Threading.Tasks;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     public class VoiceViewerSession : IVoiceViewerSession
     {

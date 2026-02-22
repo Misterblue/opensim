@@ -33,7 +33,7 @@ using OpenMetaverse;
 
 using log4net;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
 
     /// <summary>

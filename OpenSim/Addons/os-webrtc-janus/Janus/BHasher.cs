@@ -31,7 +31,7 @@ using System.Linq;
 using System.Text;
 using System.Security.Cryptography;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
 
     // There are several different hashing systems ranging from int's to SHA versions.

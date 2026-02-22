@@ -38,7 +38,7 @@ using log4net;
 using Nini.Config;
 using OSHttpServer;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     // Class that provides the local IWebRtcVoiceService interface to the JsonRPC Robust
     //     server. This is used by the region servers to talk to the Robust server.

@@ -41,7 +41,7 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     // Encapsulization of a Session to the Janus server
     public class JanusRoom : IDisposable

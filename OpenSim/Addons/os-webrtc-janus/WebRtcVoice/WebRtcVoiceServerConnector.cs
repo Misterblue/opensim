@@ -26,7 +26,6 @@
  */
 
 using System;
-using System.Net;
 using System.Reflection;
 
 using OpenSim.Framework;
@@ -43,7 +42,7 @@ using OpenMetaverse.StructuredData;
 using log4net;
 using Nini.Config;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     // Class that provides the network interface to the WebRTC voice server.
     // This is used by the Robust server to receive requests from the region servers

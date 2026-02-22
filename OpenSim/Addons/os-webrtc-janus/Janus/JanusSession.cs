@@ -39,7 +39,7 @@ using log4net.Core;
 using System.Reflection.Metadata;
 using System.Threading;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     // Encapsulization of a Session to the Janus server
     public class JanusSession : IDisposable

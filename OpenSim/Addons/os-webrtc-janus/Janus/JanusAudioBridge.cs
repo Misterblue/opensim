@@ -32,7 +32,7 @@ using System.Threading.Tasks;
 
 using log4net;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     // Encapsulization of a Session to the Janus server
     public class JanusAudioBridge : JanusPlugin

@@ -38,7 +38,7 @@ using OpenMetaverse;
 using Nini.Config;
 using log4net;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     public class WebRtcJanusService : ServiceBase, IWebRtcVoiceService
     {

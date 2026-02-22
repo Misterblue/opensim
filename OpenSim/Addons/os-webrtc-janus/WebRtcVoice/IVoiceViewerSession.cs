@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 
 using OMV = OpenMetaverse;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     /// <summary>
     /// This is the interface for the viewer session. It is used to store the

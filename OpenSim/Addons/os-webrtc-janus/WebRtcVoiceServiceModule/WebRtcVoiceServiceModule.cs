@@ -47,7 +47,7 @@ using Nini.Config;
 [assembly: Addin("WebRtcVoiceServiceModule", "1.0")]
 [assembly: AddinDependency("OpenSim.Region.Framework", OpenSim.VersionInfo.VersionNumber)]
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     /// <summary>
     /// Interface for the WebRtcVoiceService.

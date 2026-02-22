@@ -31,7 +31,7 @@ using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 using System.Threading.Tasks;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     /// <summary>
     /// This is the interface for the voice service. It is used to connect

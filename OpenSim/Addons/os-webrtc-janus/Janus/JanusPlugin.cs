@@ -39,7 +39,7 @@ using OpenMetaverse;
 using Nini.Config;
 using log4net;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     // Encapsulization of a Session to the Janus server
     public class JanusPlugin : IDisposable

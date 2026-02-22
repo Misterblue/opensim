@@ -33,7 +33,7 @@ using OpenMetaverse.StructuredData;
 
 using log4net;
 
-namespace WebRtcVoice
+namespace osWebRtcVoice
 {
     public class JanusViewerSession : IVoiceViewerSession
     {
