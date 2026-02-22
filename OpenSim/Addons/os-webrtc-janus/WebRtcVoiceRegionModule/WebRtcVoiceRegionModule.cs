@@ -75,8 +75,8 @@ namespace WebRtcVoice
         // Control info
         private static bool m_Enabled = false;
 
-        private readonly Dictionary<string, string> m_UUIDName = new Dictionary<string, string>();
-        private Dictionary<string, string> m_ParcelAddress = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> m_UUIDName = new();
+        private Dictionary<string, string> m_ParcelAddress = new();
 
         private IConfig m_Config;
 
@@ -104,22 +104,12 @@ namespace WebRtcVoice
         // ISharedRegionModule.AddRegion
         public void AddRegion(Scene scene)
         {
-            if (m_Enabled)
-            {
-                // Get the hook that means Capbibilities are being registered
-                scene.EventManager.OnRegisterCaps += (UUID agentID, Caps caps) =>
-                    {
-                        OnRegisterCaps(scene, agentID, caps);
-                    };
-
-            }
+            // todo register module to get parcels changes etc
         }
 
         // ISharedRegionModule.RemoveRegion
         public void RemoveRegion(Scene scene)
         {
-            var sfm = scene.RequestModuleInterface<ISimulatorFeaturesModule>();
-            sfm.OnSimulatorFeaturesRequest -= OnSimulatorFeatureRequestHandler;
         }
 
         // ISharedRegionModule.RegionLoaded
@@ -127,10 +117,13 @@ namespace WebRtcVoice
         {
             if (m_Enabled)
             {
-                // Register for the region feature reporting so we can add 'webrtc'
-                var sfm = scene.RequestModuleInterface<ISimulatorFeaturesModule>();
-                sfm.OnSimulatorFeaturesRequest += OnSimulatorFeatureRequestHandler;
-                m_log.DebugFormat("{0}: registering OnSimulatorFeatureRequestHandler", logHeader);
+                scene.EventManager.OnRegisterCaps += delegate (UUID agentID, Caps caps)
+                {
+                    OnRegisterCaps(scene, agentID, caps);
+                };
+
+                ISimulatorFeaturesModule simFeatures = scene.RequestModuleInterface<ISimulatorFeaturesModule>();
+                simFeatures?.AddFeature("VoiceServerType", OSD.FromString("webrtc"));
             }
         }
 
@@ -151,14 +144,6 @@ namespace WebRtcVoice
             get { return null; }
         }
 
-        // Called when the simulator features are being constructed.
-        // Add the flag that says we support WebRtc voice.
-        private void OnSimulatorFeatureRequestHandler(UUID agentID, ref OSDMap features)
-        {
-            m_log.DebugFormat("{0}: setting VoiceServerType=webrtc for agent {1}", logHeader, agentID);
-            features["VoiceServerType"] = "webrtc";
-        }
-
         // <summary>
         // OnRegisterCaps is invoked via the scene.EventManager
         // everytime OpenSim hands out capabilities to a client
@@ -171,8 +156,7 @@ namespace WebRtcVoice
         //
         // VoiceSignalingRequest: Used for trickling ICE candidates.
         //
-        // ParcelVoiceInfoRequest is invoked whenever the client
-        // changes from one region or parcel to another.
+        // ChatSessionRequest
         //
         // Note that OnRegisterCaps is called here via a closure
         // delegate containing the scene of the respective region (see
@@ -180,9 +164,8 @@ namespace WebRtcVoice
         // </summary>
         public void OnRegisterCaps(Scene scene, UUID agentID, Caps caps)
         {
-            m_log.DebugFormat(
-                "{0}: OnRegisterCaps() called with agentID {1} caps {2} in scene {3}",
-                logHeader, agentID, caps, scene.RegionInfo.RegionName);
+            m_log.Debug(
+                $"{logHeader}: OnRegisterCaps() called with agentID {agentID} caps {caps} in scene {scene.RegionInfo.RegionName}");
 
             caps.RegisterSimpleHandler("ProvisionVoiceAccountRequest",
                     new SimpleStreamHandler("/" + UUID.Random(), (IOSHttpRequest httpRequest, IOSHttpResponse httpResponse) =>
@@ -196,18 +179,11 @@ namespace WebRtcVoice
                         VoiceSignalingRequest(httpRequest, httpResponse, agentID, scene);
                     }));
 
-            caps.RegisterSimpleHandler("ParcelVoiceInfoRequest",
-                    new SimpleStreamHandler("/" + UUID.Random(), (IOSHttpRequest httpRequest, IOSHttpResponse httpResponse) =>
-                    {
-                        ParcelVoiceInfoRequest(httpRequest, httpResponse, agentID, scene);
-                    }));
-
             caps.RegisterSimpleHandler("ChatSessionRequest",
                     new SimpleStreamHandler("/" + UUID.Random(), (IOSHttpRequest httpRequest, IOSHttpResponse httpResponse) =>
                     {
                         ChatSessionRequest(httpRequest, httpResponse, agentID, scene);
                     }));
-
         }
 
         /// <summary>
@@ -222,28 +198,28 @@ namespace WebRtcVoice
         /// <returns></returns>
         public void ProvisionVoiceAccountRequest(IOSHttpRequest request, IOSHttpResponse response, UUID agentID, Scene scene)
         {
-            if (request.HttpMethod != "POST")
+            // Get the voice service. If it doesn't exist, return an error.
+            IWebRtcVoiceService voiceService = scene.RequestModuleInterface<IWebRtcVoiceService>();
+            if (voiceService is null)
             {
-                m_log.DebugFormat("[{0}][ProvisionVoice]: Not a POST request. Agent={1}", logHeader, agentID.ToString());
+                m_log.Error($"{logHeader}[ProvisionVoice]: no voice service not loaded");
+                response.StatusCode = (int)HttpStatusCode.NotFound;
+                return;
+            }
+
+            if(request.HttpMethod != "POST")
+            {
+                m_log.DebugFormat($"[{logHeader}][ProvisionVoice]: Not a POST request. Agent={agentID}");
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 return;
             }
 
             // Deserialize the request. Convert the LLSDXml to OSD for our use
-            OSDMap map = BodyToMap(request, "[ProvisionVoiceAccountRequest]");
+            OSDMap map = BodyToMap(request, "ProvisionVoiceAccountRequest");
             if (map is null)
             {
-                m_log.ErrorFormat("{0}[ProvisionVoice]: No request data found. Agent={1}", logHeader, agentID.ToString());
+                m_log.Error($"{logHeader}[ProvisionVoice]: No request data found. Agent={agentID}");
                 response.StatusCode = (int)HttpStatusCode.NoContent;
-                return;
-            }
-
-            // Get the voice service. If it doesn't exist, return an error.
-            IWebRtcVoiceService voiceService = scene.RequestModuleInterface<IWebRtcVoiceService>();
-            if (voiceService is null)
-            {
-                m_log.ErrorFormat("{0}[ProvisionVoice]: avatar \"{1}\": no voice service", logHeader, agentID);
-                response.StatusCode = (int)HttpStatusCode.NotFound;
                 return;
             }
 
@@ -252,41 +228,59 @@ namespace WebRtcVoice
             {
                 if (vstosd is OSDString vst && !((string)vst).Equals("webrtc", StringComparison.OrdinalIgnoreCase))
                 {
-                    m_log.WarnFormat("{0}[ProvisionVoice]: voice_server_type is not 'webrtc'. Request: {1}", logHeader, map.ToString());
+                    m_log.Warn($"{logHeader}[ProvisionVoice]: voice_server_type is not 'webrtc'. Request: {map}");
                     response.RawBuffer = Util.UTF8.GetBytes("<llsd><undef /></llsd>");
+                    response.StatusCode = (int)HttpStatusCode.OK;
                     return;
                 }
             }
 
+            if (_MessageDetails) m_log.DebugFormat($"{logHeader}[ProvisionVoice]: request: {map}");
+
             // The checks passed. Send the request to the voice service.
             OSDMap resp = voiceService.ProvisionVoiceAccountRequest(map, agentID, scene.RegionInfo.RegionID).Result;
 
-            if (_MessageDetails) m_log.DebugFormat("{0}[ProvisionVoice]: response: {1}", logHeader, resp.ToString());
+            if(resp is not null)
+            {
+                if (_MessageDetails) m_log.DebugFormat($"{logHeader}[ProvisionVoice]: response: {resp}");
 
-            // TODO: check for errors and package the response
+                // TODO: check for errors and package the response
 
-            // Convert the OSD to LLSDXml for the response
-            string xmlResp = OSDParser.SerializeLLSDXmlString(resp);
-
-            response.StatusCode = (int)HttpStatusCode.OK;
-            response.RawBuffer = Util.UTF8.GetBytes(xmlResp);
+                // Convert the OSD to LLSDXml for the response
+                string xmlResp = OSDParser.SerializeLLSDXmlString(resp);
+                response.RawBuffer = Util.UTF8.GetBytes(xmlResp);
+                response.StatusCode = (int)HttpStatusCode.OK;
+            }
+            else
+            {
+                m_log.DebugFormat($"{logHeader}[ProvisionVoice]: got null response");
+                response.StatusCode = (int)HttpStatusCode.OK;
+            }
             return;
         }
 
         public void VoiceSignalingRequest(IOSHttpRequest request, IOSHttpResponse response, UUID agentID, Scene scene)
         {
-            if (request.HttpMethod != "POST")
+            IWebRtcVoiceService voiceService = scene.RequestModuleInterface<IWebRtcVoiceService>();
+            if (voiceService is null)
             {
-                m_log.ErrorFormat("[{0}][VoiceSignaling]: Not a POST request. Agent={1}", logHeader, agentID.ToString());
+                m_log.ErrorFormat($"{logHeader}[VoiceSignalingRequest]: avatar \"{agentID}\": no voice service");
+                response.StatusCode = (int)HttpStatusCode.NotFound;
+                return;
+            }
+
+            if(request.HttpMethod != "POST")
+            {
+                m_log.Error($"[{logHeader}][VoiceSignaling]: Not a POST request. Agent={agentID}");
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 return;
             }
 
             // Deserialize the request. Convert the LLSDXml to OSD for our use
-            OSDMap map = BodyToMap(request, "[VoiceSignalingRequest]");
+            OSDMap map = BodyToMap(request, "VoiceSignalingRequest");
             if (map is null)
             {
-                m_log.ErrorFormat("{0}[VoiceSignalingRequest]: No request data found. Agent={1}", logHeader, agentID.ToString());
+                m_log.ErrorFormat($"{logHeader}[VoiceSignalingRequest]: No request data found. Agent={agentID}");
                 response.StatusCode = (int)HttpStatusCode.NoContent;
                 return;
             }
@@ -301,16 +295,8 @@ namespace WebRtcVoice
                 }
             }
 
-            IWebRtcVoiceService voiceService = scene.RequestModuleInterface<IWebRtcVoiceService>();
-            if (voiceService is null)
-            {
-                m_log.ErrorFormat("{0}[VoiceSignalingRequest]: avatar \"{1}\": no voice service", logHeader, agentID);
-                response.StatusCode = (int)HttpStatusCode.NotFound;
-                return;
-            }
-
             OSDMap resp = voiceService.VoiceSignalingRequest(map, agentID, scene.RegionInfo.RegionID).Result;
-            if (_MessageDetails) m_log.DebugFormat("{0}[VoiceSignalingRequest]: Response: {1}", logHeader, resp);
+            if (_MessageDetails) m_log.Debug($"{logHeader}[VoiceSignalingRequest]: Response: {resp}");
 
             // TODO: check for errors and package the response
 
@@ -579,19 +565,23 @@ namespace WebRtcVoice
         /// <returns>'null' if the request body is empty or cannot be deserialized</returns>
         private OSDMap BodyToMap(IOSHttpRequest request, string pCaller)
         {
-            OSDMap? map = null;
-            using (Stream inputStream = request.InputStream)
+            try
             {
+                using Stream inputStream = request.InputStream;
                 if (inputStream.Length > 0)
                 {
                     OSD tmp = OSDParser.DeserializeLLSDXml(inputStream);
-                    if (_MessageDetails) m_log.DebugFormat("{0} BodyToMap: Request: {1}", pCaller, tmp.ToString());
-                    map = tmp as OSDMap;
+                    if (_MessageDetails)
+                        m_log.Debug($"{pCaller} BodyToMap: Request: {tmp}");
+                    if(tmp is OSDMap map)
+                        return map;
                 }
             }
-            return map;
+            catch
+            {
+                m_log.Debug($"{pCaller} BodyToMap: Fail to decode LLSDXml request");
+            }
+            return null;
         }
-
-
     }
 }

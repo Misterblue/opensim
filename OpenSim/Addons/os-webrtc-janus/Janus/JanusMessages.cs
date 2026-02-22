@@ -69,15 +69,15 @@ namespace WebRtcVoice
         public OSDMap RawBody => m_message;
 
         public string TransactionId { 
-            get { return m_message.ContainsKey("transaction") ? m_message["transaction"] : null; }
+            get { return m_message.TryGetString("transaction", out string tid) ? tid : null;  }
             set { m_message["transaction"] = value; }
         }
         public string Sender { 
-            get { return m_message.ContainsKey("sender") ? m_message["sender"] : null; }
+            get { return m_message.TryGetString("sender", out string tid) ? tid : null;  }
             set { m_message["sender"] = value; }
         }
         public OSDMap Jsep { 
-            get { return m_message.ContainsKey("jsep") ? (m_message["jsep"] as OSDMap) : null; }
+            get { return m_message.TryGetOSDMap("jsep", out OSDMap jsep) ? jsep : null; }
             set { m_message["jsep"] = value; }
         }
         public void SetJsep(string pOffer, string pSdp)
@@ -112,8 +112,9 @@ namespace WebRtcVoice
         {
             m_message["handle_id"] = long.Parse(pToken);
         }
-        public string sender {
-            get { return m_message.ContainsKey("sender") ? m_message["sender"] : String.Empty; }
+        public string sender
+        {
+            get { return m_message.TryGetString("sender", out string str) ? str : string.Empty; }
         }
 
         public virtual string ToJson()
