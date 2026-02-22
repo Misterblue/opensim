@@ -19612,6 +19612,123 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             return 0;
         }
 
+        public void llSetRenderMaterial(LSL_String materialstr, LSL_Integer lsl_face)
+        {
+            if(m_materialsModule is null)
+                return;
+
+            if(string.IsNullOrEmpty(materialstr.m_string))
+            { 
+                Error("llSetRenderMaterial", "material \"\" not found");
+                return;
+            }
+
+            int face = lsl_face.value;
+            bool changed;
+
+            if(UUID.ZeroString.Equals(materialstr.m_string, StringComparison.OrdinalIgnoreCase))
+            {
+                if(m_host.Shape.RenderMaterials is null || m_host.Shape.RenderMaterials.entries is null || m_host.Shape.RenderMaterials.entries.Length == 0)
+                    return;
+
+                changed = m_materialsModule.CleanMaterialOverrides(ref m_host.Shape.RenderMaterials.overrides, face);
+                if(face == ScriptBaseClass.ALL_SIDES)
+                {
+                    m_host.Shape.RenderMaterials.entries = null;
+                    changed = true;
+                }
+                else
+                    changed |= m_materialsModule.RemoveMaterialEntry(ref m_host.Shape.RenderMaterials.entries, face);
+
+                if(changed)
+                { 
+                    m_host.ParentGroup.HasGroupChanged = true;
+                    m_host.ScheduleUpdate(PrimUpdateFlags.MaterialOvr | PrimUpdateFlags.FullUpdate);
+                    m_host.TriggerScriptChangedEvent(Changed.MATERIAL);
+                }
+                return;
+            }
+
+            UUID matID = ScriptUtils.GetAssetIdFromItemName(m_host, materialstr.m_string, (int)AssetType.Material);
+            if (matID.IsZero())
+            {
+                if (!UUID.TryParse(materialstr.m_string, out matID) || matID.IsZero())
+                { 
+                    Error("llSetRenderMaterial", $"material \"{materialstr.m_string}\" not found");
+                    return;
+                }
+            }
+
+            int nsides = GetNumberOfSides(m_host);
+            if(face >= nsides)
+                return;
+
+            m_host.Shape.RenderMaterials ??= new();
+            m_host.Shape.RenderMaterials.entries ??= new Primitive.RenderMaterials.RenderMaterialEntry[1];
+
+            changed = m_materialsModule.CleanMaterialOverrides(ref m_host.Shape.RenderMaterials.overrides, face);
+            if(face == ScriptBaseClass.ALL_SIDES)
+            {
+                if(m_host.Shape.RenderMaterials.entries is null || m_host.Shape.RenderMaterials.entries.Length != nsides)
+                {
+                    m_host.Shape.RenderMaterials.entries = new Primitive.RenderMaterials.RenderMaterialEntry[nsides];
+                    for (int i = 0; i < m_host.Shape.RenderMaterials.entries.Length; i++)
+                    {
+                        m_host.Shape.RenderMaterials.entries[i] = new()
+                        {
+                            te_index = (byte)i,
+                            id = matID
+                        };
+                    }
+                    changed = true;
+                }
+                else
+                {
+                    for (int i = 0; i < m_host.Shape.RenderMaterials.entries.Length; i++)
+                    {
+                        if(matID.NotEqual(m_host.Shape.RenderMaterials.entries[i].id))
+                        { 
+                            changed = true;
+                            m_host.Shape.RenderMaterials.entries[i].id = matID;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                int indx = 0;
+                for( ; indx < m_host.Shape.RenderMaterials.entries.Length; indx++)
+                {
+                    if (m_host.Shape.RenderMaterials.entries[indx].te_index == face)
+                    {
+                        if(matID.NotEqual(m_host.Shape.RenderMaterials.entries[indx].id))
+                        { 
+                            changed = true;
+                            m_host.Shape.RenderMaterials.entries[indx].id = matID;
+                        }
+                        break;
+                    }
+                }
+                if(indx == m_host.Shape.RenderMaterials.entries.Length)
+                {
+                    Array.Resize(ref m_host.Shape.RenderMaterials.entries, m_host.Shape.RenderMaterials.entries.Length + 1);
+
+                    m_host.Shape.RenderMaterials.entries[indx] = new()
+                    {
+                        te_index = (byte)face,
+                        id = matID
+                    };
+                    changed = true;
+                }
+            }
+            if(changed)
+            { 
+                m_host.ParentGroup.HasGroupChanged = true;
+                m_host.ScheduleUpdate(PrimUpdateFlags.MaterialOvr | PrimUpdateFlags.FullUpdate);
+                m_host.TriggerScriptChangedEvent(Changed.MATERIAL);
+            }
+        }
+
         public LSL_Vector llWorldPosToHUD(LSL_Vector wp)
         {
             if(!m_host.ParentGroup.IsAttachment)
