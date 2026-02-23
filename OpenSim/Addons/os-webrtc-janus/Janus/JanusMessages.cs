@@ -95,7 +95,7 @@ namespace osWebRtcVoice
         }
         // Note that the session_id is a long number in the JSON so we convert the string.
         public string sessionId { 
-            get { return m_message.ContainsKey("session_id") ? OSDToLong(m_message["session_id"]).ToString() : String.Empty; }
+            get { return m_message.TryGetValue("session_id", out OSD tmposd) ? OSDToLong(tmposd).ToString() : string.Empty; }
             set { m_message["session_id"] = long.Parse(value); }
         }
         public bool hasSessionId { get { return m_message.ContainsKey("session_id"); } }
@@ -134,7 +134,7 @@ namespace osWebRtcVoice
         //    and one fetches it with .AsInteger(), it will return the first 4 bytes as an integer
         //    and not the long value. So this function looks at the type of the OSD object and
         //    extracts the number appropriately.
-        public long OSDToLong(OSD pIn)
+        public static long OSDToLong(OSD pIn)
         {
             long ret = 0;
             switch (pIn.Type)
@@ -210,7 +210,7 @@ namespace osWebRtcVoice
         }
 
         // Return the "data" portion of the response as an OSDMap or null if there is none
-        public OSDMap dataSection { get { return m_message.ContainsKey("data") ? (m_message["data"] as OSDMap) : null; } }
+        public OSDMap dataSection { get { return m_message.TryGetOSDMap("data", out OSDMap osdm) ? osdm : null; } }
 
         // Check if a successful response code is in the response
         public virtual bool isSuccess { get { return CheckReturnCode("success"); } }

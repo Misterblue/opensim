@@ -76,7 +76,6 @@ namespace osWebRtcVoice
                     m_MessageDetails = moduleConfig.GetBoolean("MessageDetails", false);
                 }
             }
-
         }
 
         // Create a local viewer session. This gets a local viewer session ID that is

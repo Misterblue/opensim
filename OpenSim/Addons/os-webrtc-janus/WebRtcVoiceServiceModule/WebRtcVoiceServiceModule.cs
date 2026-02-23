@@ -26,12 +26,10 @@
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
-using OpenSim.Framework;
 using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Server.Base;
@@ -85,49 +83,46 @@ namespace osWebRtcVoice
                 if (m_Enabled)
                 {
                     // Get the DLLs for the two voice services
-                    string spatialDllName = moduleConfig.GetString("SpatialVoiceService", String.Empty);
-                    string nonSpatialDllName = moduleConfig.GetString("NonSpatialVoiceService", String.Empty);
-                    if (String.IsNullOrEmpty(spatialDllName) && String.IsNullOrEmpty(nonSpatialDllName))
+                    string spatialDllName = moduleConfig.GetString("SpatialVoiceService", string.Empty);
+                    string nonSpatialDllName = moduleConfig.GetString("NonSpatialVoiceService", string.Empty);
+                    if (string.IsNullOrEmpty(spatialDllName) && string.IsNullOrEmpty(nonSpatialDllName))
                     {
-                        m_log.ErrorFormat("{0} No SpatialVoiceService or NonSpatialVoiceService specified in configuration", LogHeader);
+                        m_log.Error($"{LogHeader} No VoiceService specified in configuration");
                         m_Enabled = false;
+                        return;
                     }
 
                     // Default non-spatial to spatial if not specified
-                    if (String.IsNullOrEmpty(nonSpatialDllName))
+                    if (string.IsNullOrEmpty(nonSpatialDllName))
                     {
-                        m_log.DebugFormat("{0} nonSpatialDllName not specified. Defaulting to spatialDllName", LogHeader);
+                        m_log.Debug($"{LogHeader} nonSpatialDllName not specified. Defaulting to spatialDllName");
                         nonSpatialDllName = spatialDllName;
                     }
 
                     // Load the two voice services
-                    m_log.DebugFormat("{0} Loading SpatialVoiceService from {1}", LogHeader, spatialDllName);
-                    m_spatialVoiceService = ServerUtils.LoadPlugin<IWebRtcVoiceService>(spatialDllName, new object[] { m_Config });
+                    m_log.Debug($"{LogHeader} Loading SpatialVoiceService from {spatialDllName}");
+                    m_spatialVoiceService = ServerUtils.LoadPlugin<IWebRtcVoiceService>(spatialDllName, [m_Config]);
                     if (m_spatialVoiceService is null)
                     {
-                        m_log.ErrorFormat("{0} Could not load SpatialVoiceService from {1}", LogHeader, spatialDllName);
+                        m_log.Error($"{LogHeader} Could not load SpatialVoiceService from {spatialDllName}, module disabled");
                         m_Enabled = false;
+                        return;
                     }
 
-                    m_log.DebugFormat("{0} Loading NonSpatialVoiceService from {1}", LogHeader, nonSpatialDllName);
-                    if (spatialDllName == nonSpatialDllName)
+                    m_log.Debug($"{LogHeader} Loading NonSpatialVoiceService from {nonSpatialDllName}");
+                    if (spatialDllName != nonSpatialDllName)
                     {
-                        m_log.DebugFormat("{0} NonSpatialVoiceService is same as SpatialVoiceService", LogHeader);
-                        m_nonSpatialVoiceService = m_spatialVoiceService;
-                    }
-                    else
-                    {
-                        m_nonSpatialVoiceService = ServerUtils.LoadPlugin<IWebRtcVoiceService>(nonSpatialDllName, new object[] { m_Config });
+                        m_nonSpatialVoiceService = ServerUtils.LoadPlugin<IWebRtcVoiceService>(nonSpatialDllName, [ m_Config ]);
                         if (m_nonSpatialVoiceService is null)
                         {
-                            m_log.ErrorFormat("{0} Could not load NonSpatialVoiceService from {1}", LogHeader, nonSpatialDllName);
+                            m_log.Error("{LogHeader} Could not load NonSpatialVoiceService from {nonSpatialDllName}");
                             m_Enabled = false;
                         }
                     }
 
                     if (m_Enabled)
                     {
-                        m_log.InfoFormat("{0} WebRtcVoiceService enabled", LogHeader);
+                        m_log.Info($"{LogHeader} WebRtcVoiceService enabled");
                     }
                 }
             }
@@ -160,7 +155,7 @@ namespace osWebRtcVoice
         {
             if (m_Enabled)
             {
-                m_log.DebugFormat("{0} Adding WebRtcVoiceService to region {1}", LogHeader, scene.Name);
+                m_log.Debug($"{LogHeader} Adding WebRtcVoiceService to region {scene.Name}");
                 scene.RegisterModuleInterface<IWebRtcVoiceService>(this);
 
                 // TODO: figure out what events we care about
@@ -218,21 +213,19 @@ namespace osWebRtcVoice
         {
             OSDMap response = null;
             IVoiceViewerSession vSession = null;
-            if (pRequest.ContainsKey("viewer_session"))
+            if (pRequest.TryGetString("viewer_session", out string viewerSessionId))
             {
                 // request has a viewer session. Use that to find the voice service
-                string viewerSessionId = pRequest["viewer_session"].AsString();
                 if (!VoiceViewerSession.TryGetViewerSession(viewerSessionId, out vSession))
                 {
-                    m_log.ErrorFormat("{0} ProvisionVoiceAccountRequest: viewer session {1} not found", LogHeader, viewerSessionId);
+                    m_log.Error($"{0} ProvisionVoiceAccountRequest: viewer session {viewerSessionId} not found");
                 }
             }   
             else
             {
                 // the request does not have a viewer session. See if it's an initial request
-                if (pRequest.ContainsKey("channel_type"))
+                if (pRequest.TryGetString("channel_type", out string channelType))
                 {
-                    string channelType = pRequest["channel_type"].AsString();
                     if (channelType == "local")
                     {
                         // TODO: check if this userId is making a new session (case that user is reconnecting)
@@ -248,7 +241,7 @@ namespace osWebRtcVoice
                 }
                 else
                 {
-                    m_log.ErrorFormat("{0} ProvisionVoiceAccountRequest: no channel_type in request", LogHeader);
+                    m_log.Error($"{LogHeader} ProvisionVoiceAccountRequest: no channel_type in request");
                 }
             }
             if (vSession is not null)
@@ -263,10 +256,9 @@ namespace osWebRtcVoice
         {
             OSDMap response = null;
             IVoiceViewerSession vSession = null;
-            if (pRequest.ContainsKey("viewer_session"))
+            if (pRequest.TryGetString("viewer_session", out string viewerSessionId))
             {
                 // request has a viewer session. Use that to find the voice service
-                string viewerSessionId = pRequest["viewer_session"].AsString();
                 if (VoiceViewerSession.TryGetViewerSession(viewerSessionId, out vSession))
                 {
                     response = await vSession.VoiceService.VoiceSignalingRequest(vSession, pRequest, pUserID, pSceneID);
